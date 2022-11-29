@@ -47,11 +47,11 @@ app.route("/api/shorturl/:id?")
       original_url : userUrl,
       short_url: key
     });
-    key++;
     res.json({
       original_url : userUrl,
-      short_url : key -1 
+      short_url : key 
     });
+    key++;
   }
 else {
   res.json({
