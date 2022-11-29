@@ -12,6 +12,8 @@ app.use(cors());
 
 app.use(bodyParser.urlencoded({extended: false}));
 
+app.use(express.json());
+
 app.use('/public', express.static(`${process.cwd()}/public`));
 
 
@@ -38,36 +40,40 @@ app.route("/api/shorturl/:id?")
 
 
   if(regexResult) {
-  let result = urlArr.find(elem => elem.long_url == userUrl);
+  let result = urlArr.find(elem => elem.original_url == userUrl)
   
   if(result === undefined) {
     urlArr.push({
-      long_url: userUrl,
+      original_url : userUrl,
       short_url: key
     });
     key++;
     res.json({
-      long_url: userUrl,
-      short_url: key -1 
+      original_url : userUrl,
+      short_url : key -1 
     });
   }
-
+else {
   res.json({
-    long_url: `${result.long_url}`,
-    short_url: `${result.short_url}`
+    original_url : `${result.original_url}`,
+    short_url : result["short_url"]
   });
+}
   }
+    
+  else {
   res.json({
     error: "Invalid url"
   });
-
+  
+  }
+  
   next();
 })
 .get((req,res) => {
-  
   let redirectURL = urlArr.find(elem => elem.short_url == req.params.id);
 
-  res.redirect(redirectURL.long_url);
+  res.redirect(redirectURL.original_url);
 });
 
 
