@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
-
+const dns = require("dns");
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -32,15 +32,19 @@ let key = 1;
 
 app.route("/api/shorturl/:id?")
 .post((req,res,next) => {
+  
   let {url: userUrl} = req.body;
+  let addArr;
 
-  const urlRegex = /(https:\/\/|http:\/\/)www\.(\w+)\.(com|org|io)/
-
-  let regexResult = urlRegex.test(userUrl);
-
-
-  if(regexResult) {
-  let result = urlArr.find(elem => elem.original_url == userUrl)
+  dns.lookup(userUrl, (err,address) => {
+  if(err)
+    res.json({
+      error: "Invalid url"
+    }); 
+  
+  else {
+  
+  let result = urlArr.find(elem => elem.original_url == userUrl);
   
   if(result === undefined) {
     urlArr.push({
@@ -53,22 +57,16 @@ app.route("/api/shorturl/:id?")
     });
     key++;
   }
-else {
+
+  else {
   res.json({
     original_url : `${result.original_url}`,
     short_url : result["short_url"]
   });
+
+  }
 }
-  }
-    
-  else {
-  res.json({
-    error: "Invalid url"
-  });
-  
-  }
-  
-  next();
+})
 })
 .get((req,res) => {
   let redirectURL = urlArr.find(elem => elem.short_url == req.params.id);
