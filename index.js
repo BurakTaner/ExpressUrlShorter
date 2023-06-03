@@ -2,20 +2,17 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const bodyParser = require('body-parser');
 const dns = require("dns");
-
+const bodyParser = require('body-parser');
+const urls = [];
+const urlm = require("url");
+let incrementNum = 1;
 // Basic Configuration
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-
-app.use(bodyParser.urlencoded({extended: false}));
-
-app.use(express.json());
-
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use('/public', express.static(`${process.cwd()}/public`));
-
 
 app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
@@ -26,54 +23,43 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-const urlArr = [];
-let key = 1;
-
-
-app.route("/api/shorturl/:id?")
-.post((req,res,next) => {
-  
-  let {url: userUrl} = req.body;
-  let addArr;
-
-  dns.lookup(userUrl, (err,address) => {
-  if(err)
-    res.json({
-      error: "Invalid url"
-    }); 
-  
-  else {
-  
-  let result = urlArr.find(elem => elem.original_url == userUrl);
-  
-  if(result === undefined) {
-    urlArr.push({
-      original_url : userUrl,
-      short_url: key
-    });
-    res.json({
-      original_url : userUrl,
-      short_url : key 
-    });
-    key++;
-  }
-
-  else {
-  res.json({
-    original_url : `${result.original_url}`,
-    short_url : result["short_url"]
-  });
-
-  }
-}
-})
-})
-.get((req,res) => {
-  let redirectURL = urlArr.find(elem => elem.short_url == req.params.id);
-
-  res.redirect(redirectURL.original_url);
+app.get("/api/shorturl/:id", (req,res,next) => {
+  const { id } = req.params;
+  let url = urls.find(a => a.short_url === Number(id));
+  if(url) {
+    const regx = /(http|https):\/\/*/;
+    if(!(regx.test(url.original_url))) {
+      url.original_url =  `https://${url.original_url}`;
+    }
+    res.redirect(url.original_url);
+  }  
 });
 
+app.post("/api/shorturl", (req,res) => {
+  const { url } = req.body;
+  let filteredUrl = urlm.parse(url);
+  if(!filteredUrl.hostname) {
+    res.json({
+      error: "invalid url"
+    });
+  }
+  dns.lookup(filteredUrl.hostname, (err,address, family) => {
+    if(!err) {
+      const urlObj = {
+        original_url: url,
+        short_url: incrementNum
+       }
+      urls.push(urlObj);
+       incrementNum++;
+       res.json(urlObj);
+      }
+    else {
+      res.json({
+        error: 'invalid url' 
+      })
+    }
+    });
+});
 
 
 
